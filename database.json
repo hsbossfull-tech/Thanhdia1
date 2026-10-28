@@ -1,1 +1,20 @@
- {}
+ {
+    "dayai": [],
+    "trucxuat": [],
+    "camkhau": [],
+    "anxa": [],
+    "xatoi": [],
+    "weather": [],
+    "trogiup": [],
+    "confess": [],
+    "snipe": [],
+    "info": [],
+    "announce": [],
+    "afk": [],
+    "si": [],
+    "lock": [],
+    "unlock": [],
+    "weather_channel_id": null,
+    "confess_channel_id": null
+}
+
