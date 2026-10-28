@@ -663,4 +663,5 @@ async def daily_weather_broadcast():
                         color=COLOR_WEATHER
                     )
                     embed.set_image(url=get_random_gif("weather"))
-                    embed.set_footer(text=
+                    embed.set_footer(text=f"Khí tượng thực tế: {temp}°C, {desc.capitalize()}")
+
