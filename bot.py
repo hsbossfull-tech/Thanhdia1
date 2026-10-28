@@ -49,7 +49,10 @@ def get_random_gif(command_name):
     db = load_db()
     gifs = db.get(command_name, [])
     if gifs:
-        return random.choice(gifs)
+        item = random.choice(gifs)
+        if isinstance(item, dict):
+            return item.get("url", "https://media.giphy.com/media/13feGo1n7yG30c/giphy.gif")
+        return str(item)
     return "https://media.giphy.com/media/13feGo1n7yG30c/giphy.gif"
 
 @bot.event
@@ -122,7 +125,10 @@ async def manage_gif(ctx, action: str = None, cmd_name: str = None, *, url: str 
         if not gifs:
             await ctx.send(f"📭 *Lệnh `l {cmd_name}` chưa có GIF nào trong kho.*")
             return
-        desc = "".join([f"**{i}.** [Link GIF]({g})\n" for i, g in enumerate(gifs, 1)])
+        desc = ""
+        for i, g in enumerate(gifs, 1):
+            g_url = g.get("url") if isinstance(g, dict) else str(g)
+            desc += f"**{i}.** [Link GIF]({g_url})\n"
         embed = discord.Embed(
             title=f"<a:emoji_24:1547899636222533682> **Kho GIF của lệnh: `l {cmd_name}`**",
             description=desc,
