@@ -711,5 +711,8 @@ async def on_message_delete(message):
         "time": datetime.datetime.now().strftime("%H:%M")
     })
 
-TOKEN = "MTU0ODI0NjMzMTA4Mjk0MDQzNg.Gry-C3.U6sL5uJquGcTqKa0TV-gILx8r4n33UCTl1RLJM"
+import os
+
+TOKEN = os.environ.get('DISCORD_TOKEN')
 bot.run(TOKEN)
+
