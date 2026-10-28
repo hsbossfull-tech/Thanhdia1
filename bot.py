@@ -15,21 +15,16 @@ intents.members = True
 
 bot = commands.Bot(command_prefix=['l ', 'L ', 'L', 'l'], intents=intents, help_command=None)
 
-# --- BẢNG MÀU HEX GOTHIC HẮC ÁM (CHUẨN 6 SỐ) ---
-COLOR_MAIN = 0x2e1a47       # Tím trầm hắc ám (Quản trị)
-COLOR_INFO = 0x3d3d5c       # Xám tro ánh thép (Info / ServerInfo)
-COLOR_FUN = 0x5900b3        # Tím huyết sâm (Roll / Say / Fun)
-COLOR_WEATHER = 0x004d66    # Xanh băng sương mù (Weather)
+COLOR_MAIN = 0x2e1a47
+COLOR_INFO = 0x3d3d5c
+COLOR_FUN = 0x5900b3
+COLOR_WEATHER = 0x004d66
 
-# Lưu trữ đến 20 tin nhắn bị xóa gần nhất cho mỗi kênh
 snipe_storage = defaultdict(lambda: deque(maxlen=20))
 afk_storage = {}          
-
-# --- BỘ NHỚ LƯU TRỮ ANTI-SPAM (10 TIN / 5 GIÂY) ---
 spam_tracker = defaultdict(lambda: deque(maxlen=10))
 spam_warn_count = defaultdict(int)
 
-# --- HỆ THỐNG KHO LƯU TRỮ VÀ CẤU HÌNH (DATABASE.JSON) ---
 DB_FILE = "database.json"
 
 def load_db():
@@ -80,16 +75,12 @@ def parse_time(time_str: str):
     if unit == 'd': return datetime.timedelta(days=val)
     return None
 
-# ==========================================
-# ⚙️ LỆNH QUẢN LÝ KHO GIF TRONG DISCORD (CHỈ ADMIN)
-# ==========================================
 @bot.command(name='gif')
 @is_admin_or_staff()
 async def manage_gif(ctx, action: str = None, cmd_name: str = None, *, url: str = None):
     try: await ctx.message.delete()
     except: pass
     db = load_db()
-    
     if ctx.message.attachments:
         url = ctx.message.attachments[0].url
 
@@ -131,7 +122,6 @@ async def manage_gif(ctx, action: str = None, cmd_name: str = None, *, url: str 
         if not gifs:
             await ctx.send(f"📭 *Lệnh `l {cmd_name}` chưa có GIF nào trong kho.*")
             return
-        
         desc = "".join([f"**{i}.** [Link GIF]({g})\n" for i, g in enumerate(gifs, 1)])
         embed = discord.Embed(
             title=f"<a:emoji_24:1547899636222533682> **Kho GIF của lệnh: `l {cmd_name}`**",
@@ -150,7 +140,6 @@ async def manage_gif(ctx, action: str = None, cmd_name: str = None, *, url: str 
         except:
             await ctx.send("❌ *Số thứ tự không hợp lệ. Hãy kiểm tra lại bằng `l gif list`.*")
 
-# --- BẢNG TRỢ GIÚP (HELP) - CHỈ ADMIN ---
 @bot.command(name='trogiup', aliases=['help', 'h'])
 @is_admin_or_staff()
 async def trogiup(ctx):
@@ -185,9 +174,6 @@ async def trogiup(ctx):
     embed.set_footer(text="Gothic Sanctum · System Commands (Admin Only)")
     await ctx.send(embed=embed)
 
-# ==========================================
-# 🛡️ HỆ THỐNG PHÒNG THỦ & ANTI-SPAM NGẦM
-# ==========================================
 @bot.event
 async def on_message(message):
     if message.author.bot:
@@ -220,7 +206,6 @@ async def on_message(message):
 
     is_staff = author.guild_permissions.manage_messages or author.guild_permissions.administrator
 
-    # 1. HỆ THỐNG ANTI-SPAM
     if not is_staff:
         now = datetime.datetime.now().timestamp()
         user_messages = spam_tracker[author.id]
@@ -251,12 +236,10 @@ async def on_message(message):
                 except: pass
             return
 
-    # 2. Xử lý logic AFK
     if author.id in afk_storage and not content.lower().startswith(('l afk', 'lafk')):
         afk_data = afk_storage.pop(author.id)
         passed = int((datetime.datetime.now() - afk_data["time"]).total_seconds() // 60)
         tags_list = afk_data["tags"]
-        
         tags_text = "".join([f"* † **{t['author']}**: *\"{t['content']}\"* — [Tới tin nhắn]({t['jump_url']})\n" for t in tags_list]) if tags_list else "*Không một bóng ma nào dám quấy rền giấc ngủ của ngươi.*"
 
         embed = discord.Embed(
@@ -273,7 +256,6 @@ async def on_message(message):
             a_data = afk_storage[mention.id]
             passed = int((datetime.datetime.now() - a_data["time"]).total_seconds() // 60)
             afk_storage[mention.id]["tags"].append({"author": author.name, "content": content[:100], "jump_url": message.jump_url})
-            
             embed = discord.Embed(
                 description=f"🕯️ **Chớ quấy rền:** `{mention.name}` hiện đang chìm trong hư vô từ `{passed} phút trước` (Lý do: *{a_data['reason']}*).",
                 color=COLOR_MAIN
@@ -281,7 +263,6 @@ async def on_message(message):
             warn_tag = await channel.send(embed=embed)
             await warn_tag.delete(delay=6)
 
-    # 3. Chống Link mời & Link rút gọn
     if not is_staff:
         if re.search(r'(discord\.gg/|discord\.com/invite/|discordapp\.com/invite/)', content, re.IGNORECASE):
             try:
@@ -301,25 +282,18 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-# ==========================================
-# 📜 LỆNH QUẢN TRỊ TỐI CAO (CHỈ ADMIN)
-# ==========================================
-
 @bot.command(name='dayai', aliases=['đàyải', 'ban'])
 @is_admin_or_staff()
 async def mod_dayai(ctx, member: discord.Member = None, *, reason="Kẻ ngoại đạo làm hoen ố thánh điện"):
     try: await ctx.message.delete()
     except: pass
     gif_url = get_random_gif("dayai")
-    
     if not member:
         msg = await ctx.send("❌ *Hãy chỉ định rõ linh hồn phàm trần cần đày ải.*")
         await msg.delete(delay=8)
         return
-
     await member.ban(reason=reason)
     desc = f"_Nguyện cầu cho linh hồn bạn lạc lối ở một thế giới khác_<:8ctombstone:1557437899820109985> ({ctx.author.mention} đã đày ải {member.mention})"
-
     embed = discord.Embed(description=desc, color=COLOR_MAIN)
     embed.set_image(url=gif_url)
     msg = await ctx.send(embed=embed)
@@ -331,15 +305,12 @@ async def mod_trucxuat(ctx, member: discord.Member = None, *, reason="Khước t
     try: await ctx.message.delete()
     except: pass
     gif_url = get_random_gif("trucxuat")
-    
     if not member:
         msg = await ctx.send("❌ *Hãy chỉ định rõ linh hồn cần trục xuất.*")
         await msg.delete(delay=8)
         return
-
     await member.kick(reason=reason)
     desc = f"_Cánh cổng thánh đường mở ra để tiễn bạn rời khỏi cõi này_<a:emoji_63:1548185249492508722> ({ctx.author.mention} đã trục xuất {member.mention})"
-
     embed = discord.Embed(description=desc, color=COLOR_MAIN)
     embed.set_image(url=gif_url)
     msg = await ctx.send(embed=embed)
@@ -354,11 +325,9 @@ async def mod_camkhau(ctx, member: discord.Member = None, duration_str: str = "2
         msg = await ctx.send("❌ *Hãy chỉ định rõ linh hồn cần cấm khẩu.*")
         await msg.delete(delay=8)
         return
-    
     delta = parse_time(duration_str)
     if not delta:
         delta = datetime.timedelta(days=1)
-
     try:
         await member.timeout(delta, reason="Phong ấn khẩu ải")
         desc = f"_Hơi thở của ngươi làm vấy bẩn sự tôn nghiêm nơi này thật hôi hám câm ngay_<:7crs:1556756950144786543> ({ctx.author.mention} đã cấm khẩu {member.mention} trong {duration_str})"
@@ -457,17 +426,12 @@ async def mod_announce(ctx, *, text: str):
     embed.set_footer(text=f"Gothic Sanctum · Thông cáo chính thức bởi {ctx.author.name}")
     await ctx.send(embed=embed)
 
-# ==========================================
-# 📜 LỆNH SNIPE & INFO VÀ XOA (TÍCH HỢP NÚT BỎ QUA CHO ADMIN)
-# ==========================================
-
 class SnipeView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=60)
 
     @discord.ui.button(label="Bỏ qua tin nhắn", style=discord.ButtonStyle.secondary, emoji="💀")
     async def dismiss_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # Kiểm tra chỉ có Admin mới được bấm nút bỏ qua
         if not (interaction.user.guild_permissions.manage_messages or interaction.user.guild_permissions.administrator):
             await interaction.response.send_message("❌ *Ngươi không có quyền khép lại gương soi này!*", ephemeral=True)
             return
@@ -482,21 +446,17 @@ async def mod_snipe(ctx):
     if channel_id not in snipe_storage or not snipe_storage[channel_id]:
         await ctx.send("📭 *Hư vô bao trùm, không một bóng ma ngôn từ nào sót lại.*")
         return
-    
     items = list(snipe_storage[channel_id])
     desc_lines = []
     for idx, data in enumerate(reversed(items), 1):
         content_preview = data["content"] if data["content"] else "[Chỉ chứa hình ảnh/tệp vô hình]"
         desc_lines.append(f"**{idx}. [{data['time']}] {data['author']}:** {content_preview}")
-
     embed = discord.Embed(
         title="<:A_heartbroken002:1554569090717450281> 𝔅ó𝔫𝔤 𝔪𝔞 𝔫𝔤ô𝔫 𝔱ừ 𝓿ừ𝔞 ᴛʜứᴄ ɢɪấᴄ (20 ᴛàɴ dư)",
         description="\n".join(desc_lines),
         color=COLOR_INFO
     )
     embed.set_image(url=get_random_gif("snipe"))
-    
-    # Gắn thêm giao diện nút bấm "Bỏ qua tin nhắn" bên dưới cho Admin tiện thao tác
     view = SnipeView()
     await ctx.send(embed=embed, view=view)
 
@@ -508,7 +468,6 @@ async def mod_userinfo(ctx, member: discord.Member = None):
     member = member or ctx.author
     roles = [role.mention for role in member.roles if role != ctx.guild.default_role]
     roles_str = ", ".join(roles) if roles else "Không có tước hiệu"
-
     embed = discord.Embed(title=f"<:goth_cross:1557438198378930246> 𝖲𝔬𝔦 𝗍𝍍ấ𝗎 𝖑𝖎𝖓𝍠 𝍕ồ𝖓 · {member.name}", color=COLOR_INFO)
     embed.set_thumbnail(url=member.display_avatar.url)
     embed.set_image(url=get_random_gif("info"))
@@ -524,34 +483,27 @@ async def mod_si(ctx):
     try: await ctx.message.delete()
     except: pass
     guild = ctx.guild
-    
     roles = [role.mention for role in reversed(guild.roles) if role != guild.default_role]
     role_pairs = [f"{roles[i]}  |  {roles[i+1]}" if i + 1 < len(roles) else roles[i] for i in range(0, len(roles), 2)]
-    
     roles_formatted = ""
     for pair in role_pairs:
         if len(roles_formatted) + len(pair) + 1 > 950:
             roles_formatted += "\n*...và nhiều vai trò khác*"
             break
         roles_formatted += pair + "\n"
-        
     if not roles_formatted:
         roles_formatted = "Không có vai trò riêng"
-
     embed = discord.Embed(title=f"<:caccc:1547883345944387594> **𝔖𝔬𝔦 𝔱𝖍ấ𝔲 𝔱𝖍á𝔫𝔥 đị𝔞 · {guild.name}**", color=COLOR_INFO)
     if guild.icon: embed.set_thumbnail(url=guild.icon.url)
     embed.set_image(url=get_random_gif("si"))
-    
     embed.add_field(name="👑 Chủ sở hữu", value=f"{guild.owner.mention}", inline=True)
-    embed.add_field(name="🆔 Server ID", value=f"`{guild.id}`", inline=True)
+    embed.add_field(name="🆔 Server ID", value=`{guild.id}`, inline=True)
     embed.add_field(name="👥 Linh hồn trú ngụ", value=f"**{guild.member_count}** thành viên", inline=True)
     embed.add_field(name="📜 Ngày khởi tạo", value=f"<t:{int(guild.created_at.timestamp())}:D>", inline=True)
     embed.add_field(name="🔮 Cấp độ Boost", value=f"Level {guild.premium_tier} ({guild.premium_subscription_count} Boosts)", inline=True)
     embed.add_field(name="💬 Số lượng kênh", value=f"{len(guild.channels)} kênh", inline=True)
     embed.add_field(name="🎭 Bảng Vai Trò (Roles)", value=roles_formatted, inline=False)
-    
     embed.set_footer(text="Gothic Sanctum · Server Inspection")
-    # Gắn thêm nút bỏ qua cho Admin khi soi server
     view = SnipeView()
     await ctx.send(embed=embed, view=view)
 
@@ -563,10 +515,6 @@ async def mod_xoa(ctx, amount: int = 5):
     deleted = await ctx.channel.purge(limit=amount)
     msg = await ctx.send(f"🔥 *Đã dùng lửa thánh thiêu rụi {len(deleted)} vệt bụi ngôn từ.*")
     await msg.delete(delay=3)
-
-# ==========================================
-# 🏰 CÁC LỆNH TIỆN ÍCH DÀNH CHO THÀNH VIÊN & ADMIN
-# ==========================================
 
 @bot.command(name='afk')
 async def mod_afk(ctx, *, reason: str = "Linh hồn chìm vào hư vô"):
@@ -664,4 +612,52 @@ async def daily_weather_broadcast():
                     )
                     embed.set_image(url=get_random_gif("weather"))
                     embed.set_footer(text=f"Khí tượng thực tế: {temp}°C, {desc.capitalize()}")
+                    await channel.send(embed=embed)
+            except Exception as e:
+                print(f"[WEATHER BROADCAST EXCEPTION]: {e}")
 
+@bot.command(name='setweather')
+@is_admin_or_staff()
+async def set_weather_channel(ctx, channel: discord.TextChannel = None):
+    try: await ctx.message.delete()
+    except: pass
+    db = load_db()
+    channel = channel or ctx.channel
+    db["weather_channel_id"] = channel.id
+    save_db(db)
+    embed = discord.Embed(description=f"<:caccc:1547883345944387594> **Đã định vị tháp quan sát:** Kênh `{channel.name}` được chọn làm nơi phát sấm truyền khí tượng tự động vào lúc **6:00 sáng** hàng ngày.", color=COLOR_MAIN)
+    await ctx.send(embed=embed)
+
+@bot.command(name='setconfess')
+@is_admin_or_staff()
+async def set_confess_channel(ctx, channel: discord.TextChannel = None):
+    try: await ctx.message.delete()
+    except: pass
+    db = load_db()
+    channel = channel or ctx.channel
+    db["confess_channel_id"] = channel.id
+    save_db(db)
+    embed = discord.Embed(description=f"<a:black_butterflies:1556339019418443988> **Đã yểm ấn hòm thư:** Kênh `{channel.name}` được chọn làm nơi thu gom mọi lời thú tội ẩn danh.", color=COLOR_MAIN)
+    await ctx.send(embed=embed)
+
+@bot.command(name='av', aliases=['avt', 'avatar'])
+async def mod_avatar(ctx, member: discord.Member = None):
+    try: await ctx.message.delete()
+    except: pass
+    member = member or ctx.author
+    embed = discord.Embed(title=f"<a:006:1556339034425524314> 𝖁ẻ 𝖉𝖚𝖓𝍠àm 𝖙𝖈𝖍rà𝖓 · {member.name}", description="_Dung mạo phàm trần phản chiếu qua gương soi hắc ám..._", color=COLOR_INFO)
+    embed.set_image(url=member.display_avatar.url)
+    await ctx.send(embed=embed)
+
+@bot.event
+async def on_message_delete(message):
+    if message.author.bot: return
+    snipe_storage[message.channel.id].append({
+        "content": message.content,
+        "author": message.author.name,
+        "avatar": message.author.display_avatar.url,
+        "time": datetime.datetime.now().strftime("%H:%M")
+    })
+
+TOKEN = os.environ.get('DISCORD_TOKEN')
+bot.run(TOKEN)
