@@ -497,7 +497,7 @@ async def mod_si(ctx):
     if guild.icon: embed.set_thumbnail(url=guild.icon.url)
     embed.set_image(url=get_random_gif("si"))
     embed.add_field(name="👑 Chủ sở hữu", value=f"{guild.owner.mention}", inline=True)
-    embed.add_field(name="🆔 Server ID", value=`{guild.id}`, inline=True)
+    embed.add_field(name="🆔 Server ID", value=f"{guild.id}", inline=True)
     embed.add_field(name="👥 Linh hồn trú ngụ", value=f"**{guild.member_count}** thành viên", inline=True)
     embed.add_field(name="📜 Ngày khởi tạo", value=f"<t:{int(guild.created_at.timestamp())}:D>", inline=True)
     embed.add_field(name="🔮 Cấp độ Boost", value=f"Level {guild.premium_tier} ({guild.premium_subscription_count} Boosts)", inline=True)
