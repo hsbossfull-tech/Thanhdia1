@@ -1,8 +1,8 @@
-
 import discord
 from discord.ext import commands, tasks
 import datetime
 from datetime import time
+import copy
 import re
 import requests
 import json
@@ -25,6 +25,12 @@ COLOR_MAIN = 0x2e1a47
 COLOR_INFO = 0x3d3d5c
 COLOR_FUN = 0x5900b3
 COLOR_WEATHER = 0x004d66
+
+# Khóa thời tiết lấy từ biến môi trường (Render -> Environment -> WEATHER_KEY)
+WEATHER_KEY = os.environ.get("WEATHER_KEY", "")
+
+# Múi giờ Việt Nam (UTC+7) để báo thời tiết đúng 6:00 sáng
+VN_TZ = datetime.timezone(datetime.timedelta(hours=7))
 
 snipe_storage = defaultdict(lambda: deque(maxlen=20))
 afk_storage = {}
@@ -63,7 +69,7 @@ DEFAULT_DB = {
 
 def load_db():
     """Đọc database và giữ nguyên dữ liệu đã lưu."""
-    data = DEFAULT_DB.copy()
+    data = copy.deepcopy(DEFAULT_DB)
 
     if os.path.exists(DB_FILE):
         try:
@@ -151,6 +157,12 @@ def is_valid_http_url(url):
         )
     except (ValueError, AttributeError):
         return False
+
+
+def looks_like_direct_image(url):
+    """Link phải trỏ thẳng tới ảnh (.gif/.png/...), không phải link trang web."""
+    path = urlparse(url.strip()).path.lower()
+    return path.endswith(('.gif', '.png', '.jpg', '.jpeg', '.webp'))
 
 
 @bot.event
@@ -273,6 +285,14 @@ async def manage_gif(
             await ctx.send(
                 "❌ Link không hợp lệ. Hãy dùng đường dẫn bắt đầu "
                 "bằng `https://` hoặc `http://`."
+            )
+            return
+
+        if not looks_like_direct_image(gif_url):
+            await ctx.send(
+                "❌ Đây là link trang web, không phải link ảnh trực tiếp. "
+                "Hãy dùng link có đuôi `.gif` "
+                "(nhấn giữ ảnh → Sao chép địa chỉ ảnh)."
             )
             return
 
@@ -1251,11 +1271,16 @@ async def mod_weather(ctx, *, city: str = "Ho Chi Minh"):
     except discord.HTTPException:
         pass
 
-    api_key = "bd5e378503939ddaee76f12ad7a97608"
+    if not WEATHER_KEY:
+        await ctx.send(
+            "❌ *Thiên văn đài chưa được cấp chìa khóa "
+            "(thiếu biến `WEATHER_KEY`).*"
+        )
+        return
 
     url = (
         "https://api.openweathermap.org/data/2.5/weather"
-        f"?q={city}&appid={api_key}&units=metric&lang=vi"
+        f"?q={city}&appid={WEATHER_KEY}&units=metric&lang=vi"
     )
 
     try:
@@ -1302,12 +1327,12 @@ async def mod_weather(ctx, *, city: str = "Ho Chi Minh"):
         await ctx.send(f"❌ Lỗi thiên văn đài: {e}")
 
 
-@tasks.loop(time=time(hour=6, minute=0, second=0))
+@tasks.loop(time=time(hour=6, minute=0, second=0, tzinfo=VN_TZ))
 async def daily_weather_broadcast():
     db = load_db()
     weather_channel_id = db.get("weather_channel_id")
 
-    if weather_channel_id is None:
+    if weather_channel_id is None or not WEATHER_KEY:
         return
 
     channel = bot.get_channel(weather_channel_id)
@@ -1316,11 +1341,10 @@ async def daily_weather_broadcast():
         return
 
     city = "Ho Chi Minh"
-    api_key = "bd5e378503939ddaee76f12ad7a97608"
 
     url = (
         "https://api.openweathermap.org/data/2.5/weather"
-        f"?q={city}&appid={api_key}&units=metric&lang=vi"
+        f"?q={city}&appid={WEATHER_KEY}&units=metric&lang=vi"
     )
 
     try:
